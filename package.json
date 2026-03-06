@@ -1,5 +1,5 @@
 {
-  "name": "path-matcher",
+  "name": "path-expression-matcher",
   "version": "1.0.0",
   "description": "Efficient path tracking and pattern matching for XML/JSON parsers",
   "main": "src/index.js",
@@ -29,12 +29,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NaturalIntelligence/path-matcher"
+    "url": "https://github.com/NaturalIntelligence/path-expression-matcher"
   },
   "bugs": {
-    "url": "https://github.com/NaturalIntelligence/path-matcher/issues"
+    "url": "https://github.com/NaturalIntelligence/path-expression-matcher/issues"
   },
-  "homepage": "https://github.com/NaturalIntelligence/path-matcher#readme",
+  "homepage": "https://github.com/NaturalIntelligence/path-expression-matcher#readme",
   "engines": {
     "node": ">=14.0.0"
   },

@@ -1,10 +1,10 @@
-# path-matcher
+# path-expression-matcher
 
 Efficient path tracking and pattern matching for XML, JSON, YAML or any other parsers.
 
 ## 🎯 Purpose
 
-`path-matcher` provides two core classes for tracking and matching paths:
+`path-expression-matcher` provides two core classes for tracking and matching paths:
 
 - **`Expression`**: Parses and stores pattern expressions (e.g., `"root.users.user[id]"`)
 - **`Matcher`**: Tracks current path during parsing and matches against expressions
@@ -14,13 +14,13 @@ Compatible with [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xm
 ## 📦 Installation
 
 ```bash
-npm install path-matcher
+npm install path-expression-matcher
 ```
 
 ## 🚀 Quick Start
 
 ```javascript
-import { Expression, Matcher } from 'path-matcher';
+import { Expression, Matcher } from 'path-expression-matcher';
 
 // Create expression (parse once, reuse many times)
 const expr = new Expression("root.users.user");
@@ -290,7 +290,7 @@ matcher.restore(snapshot);
 
 ```javascript
 import { XMLParser } from 'fast-xml-parser';
-import { Expression, Matcher } from 'path-matcher';
+import { Expression, Matcher } from 'path-expression-matcher';
 
 class MyParser {
   constructor() {
@@ -494,10 +494,10 @@ function matchesAny(matcher, patterns) {
 
 ```javascript
 import { XMLParser } from 'fast-xml-parser';
-import { Expression, Matcher } from 'path-matcher';
+import { Expression, Matcher } from 'path-expression-matcher';
 
 const parser = new XMLParser({
-  // Custom options using path-matcher
+  // Custom options using path-expression-matcher
   stopNodes: ["script", "style"].map(tag => new Expression(`..${tag}`)),
   
   tagValueProcessor: (tagName, value, jPath, hasAttrs, isLeaf, matcher) => {
