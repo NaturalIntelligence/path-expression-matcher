@@ -1,0 +1,45 @@
+{
+  "name": "path-matcher",
+  "version": "1.0.0",
+  "description": "Efficient path tracking and pattern matching for XML/JSON parsers",
+  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./Expression": "./src/Expression.js",
+    "./Matcher": "./src/Matcher.js"
+  },
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "xml",
+    "json",
+    "path",
+    "matcher",
+    "pattern",
+    "xpath",
+    "selector",
+    "parser",
+    "tagger",
+    "fast-xml-parser"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/fast-xml-tagger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/fast-xml-tagger/issues"
+  },
+  "homepage": "https://github.com/yourusername/fast-xml-tagger#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ]
+}
