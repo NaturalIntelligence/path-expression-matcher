@@ -15,25 +15,26 @@
   "keywords": [
     "xml",
     "json",
+    "yaml",
     "path",
     "matcher",
     "pattern",
     "xpath",
     "selector",
     "parser",
-    "tagger",
-    "fast-xml-parser"
+    "fast-xml-parser",
+    "fast-xml-builder"
   ],
-  "author": "",
+  "author": "Amit Gupta (https://solothought.com)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/fast-xml-tagger.git"
+    "url": "https://github.com/NaturalIntelligence/path-matcher"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/fast-xml-tagger/issues"
+    "url": "https://github.com/NaturalIntelligence/path-matcher/issues"
   },
-  "homepage": "https://github.com/yourusername/fast-xml-tagger#readme",
+  "homepage": "https://github.com/NaturalIntelligence/path-matcher#readme",
   "engines": {
     "node": ">=14.0.0"
   },
@@ -41,5 +42,11 @@
     "src/",
     "README.md",
     "LICENSE"
+  ],
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/NaturalIntelligence"
+    }
   ]
 }
