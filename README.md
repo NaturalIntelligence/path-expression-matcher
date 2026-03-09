@@ -109,6 +109,19 @@ console.log(matcher.toString()); // "soap:Envelope.soap:Body.ns:UserId"
 - Pattern `*::user` matches tag "user" with any namespace (wildcard namespace)
 - Namespaces are tracked separately for counter/position (e.g., `ns1::item` and `ns2::item` have independent counters)
 
+### Wildcard Differences
+
+**Single wildcard (`*`)** - Matches exactly ONE level:
+- `"*.fix1"` matches `root.fix1` (2 levels) ✅
+- `"*.fix1"` does NOT match `root.another.fix1` (3 levels) ❌
+- Path depth MUST equal pattern depth
+
+**Deep wildcard (`..`)** - Matches ZERO or MORE levels:
+- `"..fix1"` matches `root.fix1` ✅
+- `"..fix1"` matches `root.another.fix1` ✅
+- `"..fix1"` matches `a.b.c.d.fix1` ✅
+- Works at any depth
+
 ### Combined Patterns
 
 ```javascript
