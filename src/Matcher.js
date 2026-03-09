@@ -87,9 +87,11 @@ export default class Matcher {
 
     const node = this.path.pop();
 
-    // Clean up sibling tracking for this level
-    if (this.siblingStacks[this.path.length]) {
-      delete this.siblingStacks[this.path.length];
+    // Clean up sibling tracking for levels deeper than current
+    // After pop, path.length is the new depth
+    // We need to clean up siblingStacks[path.length + 1] and beyond
+    if (this.siblingStacks.length > this.path.length + 1) {
+      this.siblingStacks.length = this.path.length + 1;
     }
 
     return node;
