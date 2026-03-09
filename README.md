@@ -37,6 +37,13 @@ if (matcher.matches(expr)) {
   console.log("Match found!");
   console.log("Current path:", matcher.toString()); // "root.users.user"
 }
+
+// Namespace support
+const nsExpr = new Expression("soap::Envelope.soap::Body..ns::UserId");
+matcher.push("Envelope", null, "soap");
+matcher.push("Body", null, "soap");
+matcher.push("UserId", null, "ns");
+console.log(matcher.toString()); // "soap:Envelope.soap:Body.ns:UserId"
 ```
 
 ## 📖 Pattern Syntax
@@ -78,11 +85,37 @@ if (matcher.matches(expr)) {
 
 **Note:** Position selectors use the **counter** (occurrence count of the tag name), not the position (child index). For example, in `<root><a/><b/><a/></root>`, the second `<a/>` has position=2 but counter=1.
 
+### Namespaces
+
+```javascript
+"ns::user"                  // user with namespace "ns"
+"soap::Envelope"            // Envelope with namespace "soap"
+"ns::user[id]"              // user with namespace "ns" and "id" attribute
+"ns::user:first"            // First user with namespace "ns"
+"*::user"                   // user with any namespace
+"..ns::item"                // item with namespace "ns" anywhere in tree
+"soap::Envelope.soap::Body" // Nested namespaced elements
+"ns::first"                 // Tag named "first" with namespace "ns" (NO ambiguity!)
+```
+
+**Namespace syntax:**
+- Use **double colon (::)** for namespace: `ns::tag`
+- Use **single colon (:)** for position: `tag:first`
+- Combined: `ns::tag:first` (namespace + tag + position)
+
+**Namespace matching rules:**
+- Pattern `ns::user` matches only nodes with namespace "ns" and tag "user"
+- Pattern `user` (no namespace) matches nodes with tag "user" regardless of namespace
+- Pattern `*::user` matches tag "user" with any namespace (wildcard namespace)
+- Namespaces are tracked separately for counter/position (e.g., `ns1::item` and `ns2::item` have independent counters)
+
 ### Combined Patterns
 
 ```javascript
-"..user[id]:first"          // First user with id, anywhere
-"root..user[type=admin]"    // Admin user under root
+"..user[id]:first"              // First user with id, anywhere
+"root..user[type=admin]"        // Admin user under root
+"ns::user[id]:first"            // First namespaced user with id
+"soap::Envelope..ns::UserId"    // UserId with namespace ns under SOAP envelope
 ```
 
 ## 🔧 API Reference
@@ -125,18 +158,21 @@ new Matcher(options)
 
 #### Path Tracking Methods
 
-##### `push(tagName, attrValues)`
+##### `push(tagName, attrValues, namespace)`
 
 Add a tag to the current path. Position and counter are automatically calculated.
 
 **Parameters:**
 - `tagName` (string): Tag name
 - `attrValues` (object, optional): Attribute key-value pairs (current node only)
+- `namespace` (string, optional): Namespace for the tag
 
 **Example:**
 ```javascript
 matcher.push("user", { id: "123", type: "admin" });
 matcher.push("item");  // No attributes
+matcher.push("Envelope", null, "soap");  // With namespace
+matcher.push("Body", { version: "1.1" }, "soap");  // With both
 ```
 
 **Position vs Counter:**
@@ -199,6 +235,14 @@ Get current tag name.
 const tag = matcher.getCurrentTag(); // "user"
 ```
 
+##### `getCurrentNamespace()`
+
+Get current namespace.
+
+```javascript
+const ns = matcher.getCurrentNamespace(); // "soap" or undefined
+```
+
 ##### `getAttrValue(attrName)`
 
 Get attribute value of current node.
@@ -249,13 +293,18 @@ Get current path depth.
 const depth = matcher.getDepth(); // 3 for "root.users.user"
 ```
 
-##### `toString(separator?)`
+##### `toString(separator?, includeNamespace?)`
 
 Get path as string.
 
+**Parameters:**
+- `separator` (string, optional): Path separator (uses default if not provided)
+- `includeNamespace` (boolean, optional): Whether to include namespaces (default: true)
+
 ```javascript
-const path = matcher.toString();     // "root.users.user"
-const path2 = matcher.toString('/'); // "root/users/user"
+const path = matcher.toString();           // "root.ns:user.item"
+const path2 = matcher.toString('/');       // "root/ns:user/item"
+const path3 = matcher.toString('.', false); // "root.user.item" (no namespaces)
 ```
 
 ##### `toArray()`
@@ -417,6 +466,48 @@ console.log(matcher.getCounter());  // 1 (second "item" specifically)
 // :first uses counter, not position
 const expr = new Expression("root.item:first");
 console.log(matcher.matches(expr)); // false (counter=1, not 0)
+```
+
+### Example 7: Namespace Support (XML/SOAP)
+
+```javascript
+const matcher = new Matcher();
+const soapExpr = new Expression("soap::Envelope.soap::Body..ns::UserId");
+
+// Parse SOAP document
+matcher.push("Envelope", { xmlns: "..." }, "soap");
+matcher.push("Body", null, "soap");
+matcher.push("GetUserRequest", null, "ns");
+matcher.push("UserId", null, "ns");
+
+// Match namespaced pattern
+if (matcher.matches(soapExpr)) {
+  console.log("Found UserId in SOAP body");
+  console.log(matcher.toString()); // "soap:Envelope.soap:Body.ns:GetUserRequest.ns:UserId"
+}
+
+// Namespace-specific counters
+matcher.reset();
+matcher.push("root");
+matcher.push("item", null, "ns1");  // ns1::item counter=0
+matcher.pop();
+matcher.push("item", null, "ns2");  // ns2::item counter=0 (different namespace)
+matcher.pop();
+matcher.push("item", null, "ns1");  // ns1::item counter=1
+
+const firstNs1Item = new Expression("root.ns1::item:first");
+console.log(matcher.matches(firstNs1Item)); // false (counter=1)
+
+const secondNs1Item = new Expression("root.ns1::item:nth(1)");
+console.log(matcher.matches(secondNs1Item)); // true
+
+// NO AMBIGUITY: Tags named after position keywords
+matcher.reset();
+matcher.push("root");
+matcher.push("first", null, "ns");  // Tag named "first" with namespace
+
+const expr = new Expression("root.ns::first");
+console.log(matcher.matches(expr)); // true - matches namespace "ns", tag "first"
 ```
 
 ## 🏗️ Architecture

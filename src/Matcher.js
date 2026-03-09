@@ -33,8 +33,9 @@ export default class Matcher {
    * Push a new tag onto the path
    * @param {string} tagName - Name of the tag
    * @param {Object} attrValues - Attribute key-value pairs for current node (optional)
+   * @param {string} namespace - Namespace for the tag (optional)
    */
-  push(tagName, attrValues = null) {
+  push(tagName, attrValues = null, namespace = null) {
     // Remove values from previous current node (now becoming ancestor)
     if (this.path.length > 0) {
       const prev = this.path[this.path.length - 1];
@@ -49,8 +50,11 @@ export default class Matcher {
 
     const siblings = this.siblingStacks[currentLevel];
 
+    // Create a unique key for sibling tracking that includes namespace
+    const siblingKey = namespace ? `${namespace}:${tagName}` : tagName;
+
     // Calculate counter (how many times this tag appeared at this level)
-    const counter = siblings.get(tagName) || 0;
+    const counter = siblings.get(siblingKey) || 0;
 
     // Calculate position (total children at this level so far)
     let position = 0;
@@ -59,7 +63,7 @@ export default class Matcher {
     }
 
     // Update sibling count for this tag
-    siblings.set(tagName, counter + 1);
+    siblings.set(siblingKey, counter + 1);
 
     // Create new node
     const node = {
@@ -67,6 +71,11 @@ export default class Matcher {
       position: position,
       counter: counter
     };
+
+    // Store namespace if provided
+    if (namespace !== null && namespace !== undefined) {
+      node.namespace = namespace;
+    }
 
     // Store values only for current node
     if (attrValues !== null && attrValues !== undefined) {
@@ -117,6 +126,14 @@ export default class Matcher {
    */
   getCurrentTag() {
     return this.path.length > 0 ? this.path[this.path.length - 1].tag : undefined;
+  }
+
+  /**
+   * Get current namespace
+   * @returns {string|undefined}
+   */
+  getCurrentNamespace() {
+    return this.path.length > 0 ? this.path[this.path.length - 1].namespace : undefined;
   }
 
   /**
@@ -179,11 +196,17 @@ export default class Matcher {
   /**
    * Get path as string
    * @param {string} separator - Optional separator (uses default if not provided)
+   * @param {boolean} includeNamespace - Whether to include namespace in output (default: true)
    * @returns {string}
    */
-  toString(separator) {
+  toString(separator, includeNamespace = true) {
     const sep = separator || this.separator;
-    return this.path.map(n => n.tag).join(sep);
+    return this.path.map(n => {
+      if (includeNamespace && n.namespace) {
+        return `${n.namespace}:${n.tag}`;
+      }
+      return n.tag;
+    }).join(sep);
   }
 
   /**
@@ -312,6 +335,15 @@ export default class Matcher {
     if (segment.tag !== '*' && segment.tag !== node.tag) {
       return false;
     }
+
+    // Match namespace if specified in segment
+    if (segment.namespace !== undefined) {
+      // Segment has namespace - node must match it
+      if (segment.namespace !== '*' && segment.namespace !== node.namespace) {
+        return false;
+      }
+    }
+    // If segment has no namespace, it matches nodes with or without namespace
 
     // Match attribute name (check if node has this attribute)
     // Can only check for current node since ancestors don't have values

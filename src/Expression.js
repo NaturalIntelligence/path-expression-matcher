@@ -76,51 +76,114 @@ export default class Expression {
   /**
    * Parse a single segment
    * @private
-   * @param {string} part - Segment string (e.g., "user", "user[id]", "user:first")
+   * @param {string} part - Segment string (e.g., "user", "ns::user", "user[id]", "ns::user:first")
    * @returns {Object} Segment object
    */
   _parseSegment(part) {
     const segment = { type: 'tag' };
 
-    // Match pattern: tagname[attr] or tagname[attr=value] or tagname:position
-    // Examples: user, user[id], user[type=admin], user:first, user[id]:first, user:nth(2)
-    const match = part.match(/^([^[\]:]+)(?:\[([^\]]+)\])?(?::(\w+(?:\(\d+\))?))?$/);
+    // NEW NAMESPACE SYNTAX (v2.0):
+    // ============================
+    // Namespace uses DOUBLE colon (::)
+    // Position uses SINGLE colon (:)
+    // 
+    // Examples:
+    //   "user"              → tag
+    //   "user:first"        → tag + position
+    //   "user[id]"          → tag + attribute
+    //   "user[id]:first"    → tag + attribute + position
+    //   "ns::user"          → namespace + tag
+    //   "ns::user:first"    → namespace + tag + position
+    //   "ns::user[id]"      → namespace + tag + attribute
+    //   "ns::user[id]:first" → namespace + tag + attribute + position
+    //   "ns::first"         → namespace + tag named "first" (NO ambiguity!)
+    //
+    // This eliminates all ambiguity:
+    //   :: = namespace separator
+    //   :  = position selector
+    //   [] = attributes
 
-    if (!match) {
-      throw new Error(`Invalid segment pattern: ${part}`);
-    }
+    // Step 1: Extract brackets [attr] or [attr=value]
+    let bracketContent = null;
+    let withoutBrackets = part;
 
-    segment.tag = match[1].trim();
-
-    // Parse attribute condition [attr] or [attr=value]
-    if (match[2]) {
-      const attrExpr = match[2];
-
-      if (attrExpr.includes('=')) {
-        const eqIndex = attrExpr.indexOf('=');
-        const attrName = attrExpr.substring(0, eqIndex).trim();
-        const attrValue = attrExpr.substring(eqIndex + 1).trim();
-
-        segment.attrName = attrName;
-        segment.attrValue = attrValue;
-      } else {
-        segment.attrName = attrExpr.trim();
+    const bracketMatch = part.match(/^([^\[]+)(\[[^\]]*\])(.*)$/);
+    if (bracketMatch) {
+      withoutBrackets = bracketMatch[1] + bracketMatch[3];
+      if (bracketMatch[2]) {
+        const content = bracketMatch[2].slice(1, -1);
+        if (content) {
+          bracketContent = content;
+        }
       }
     }
 
-    // Parse position selector :first, :nth(n), :odd, :even
-    if (match[3]) {
-      const posExpr = match[3];
+    // Step 2: Check for namespace (double colon ::)
+    let namespace = undefined;
+    let tagAndPosition = withoutBrackets;
 
-      // Check for :nth(n) pattern
-      const nthMatch = posExpr.match(/^nth\((\d+)\)$/);
+    if (withoutBrackets.includes('::')) {
+      const nsIndex = withoutBrackets.indexOf('::');
+      namespace = withoutBrackets.substring(0, nsIndex).trim();
+      tagAndPosition = withoutBrackets.substring(nsIndex + 2).trim(); // Skip ::
+
+      if (!namespace) {
+        throw new Error(`Invalid namespace in pattern: ${part}`);
+      }
+    }
+
+    // Step 3: Parse tag and position (single colon :)
+    let tag = undefined;
+    let positionMatch = null;
+
+    if (tagAndPosition.includes(':')) {
+      const colonIndex = tagAndPosition.lastIndexOf(':'); // Use last colon for position
+      const tagPart = tagAndPosition.substring(0, colonIndex).trim();
+      const posPart = tagAndPosition.substring(colonIndex + 1).trim();
+
+      // Verify position is a valid keyword
+      const isPositionKeyword = ['first', 'last', 'odd', 'even'].includes(posPart) ||
+        /^nth\(\d+\)$/.test(posPart);
+
+      if (isPositionKeyword) {
+        tag = tagPart;
+        positionMatch = posPart;
+      } else {
+        // Not a valid position keyword, treat whole thing as tag
+        tag = tagAndPosition;
+      }
+    } else {
+      tag = tagAndPosition;
+    }
+
+    if (!tag) {
+      throw new Error(`Invalid segment pattern: ${part}`);
+    }
+
+    segment.tag = tag;
+    if (namespace) {
+      segment.namespace = namespace;
+    }
+
+    // Step 4: Parse attributes
+    if (bracketContent) {
+      if (bracketContent.includes('=')) {
+        const eqIndex = bracketContent.indexOf('=');
+        segment.attrName = bracketContent.substring(0, eqIndex).trim();
+        segment.attrValue = bracketContent.substring(eqIndex + 1).trim();
+      } else {
+        segment.attrName = bracketContent.trim();
+      }
+    }
+
+    // Step 5: Parse position selector
+    if (positionMatch) {
+      const nthMatch = positionMatch.match(/^nth\((\d+)\)$/);
       if (nthMatch) {
         segment.position = 'nth';
         segment.positionValue = parseInt(nthMatch[1], 10);
-      } else if (['first', 'odd', 'even'].includes(posExpr)) {
-        segment.position = posExpr;
       } else {
-        throw new Error(`Invalid position selector: :${posExpr}`);
+        segment.position = positionMatch;
       }
     }
 
