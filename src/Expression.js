@@ -82,12 +82,6 @@ export default class Expression {
   _parseSegment(part) {
     const segment = { type: 'tag' };
 
-    // CRITICAL: Handle wildcard FIRST (before any other parsing)
-    if (part === '*') {
-      segment.tag = '*';
-      return segment;
-    }
-
     // NEW NAMESPACE SYNTAX (v2.0):
     // ============================
     // Namespace uses DOUBLE colon (::)

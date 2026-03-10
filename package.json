@@ -1,6 +1,6 @@
 {
   "name": "path-expression-matcher",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Efficient path tracking and pattern matching for XML/JSON parsers",
   "main": "src/index.js",
   "type": "module",

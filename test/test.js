@@ -154,6 +154,9 @@ console.log('\n📦 Pattern Matching Tests\n');
 
   const expr3 = new Expression("root.users.*");
   assert(matcher.matches(expr3), "Should match with wildcard at end");
+
+  const expr4 = new Expression("*.users");
+  assert(!matcher.matches(expr4), "Should not match with wildcard when depth is not matching");
 }
 
 // Test 10: Deep wildcard match
