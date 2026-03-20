@@ -20,7 +20,7 @@
     }
   },
   "scripts": {
-    "test": "c8 --reporter=lcov --reporter=text node test/namespace_test.js && c8 --reporter=lcov --reporter=text node test/test.js",
+    "test": "c8 --reporter=lcov --reporter=text node test/*test.js",
     "bundle": "webpack --config webpack.cjs.config.js"
   },
   "keywords": [
@@ -50,6 +50,7 @@
     "node": ">=14.0.0"
   },
   "files": [
+    "lib",
     "src/",
     "README.md",
     "LICENSE"
