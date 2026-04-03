@@ -44,6 +44,7 @@ export default class Matcher {
    * @param {string} namespace - Namespace for the tag (optional)
    */
   push(tagName, attrValues = null, namespace = null) {
+    this._pathStringCache = null; // invalidate
     // Remove values from previous current node (now becoming ancestor)
     if (this.path.length > 0) {
       const prev = this.path[this.path.length - 1];
@@ -101,7 +102,7 @@ export default class Matcher {
     if (this.path.length === 0) {
       return undefined;
     }
-
+    this._pathStringCache = null; // invalidate
     const node = this.path.pop();
 
     // Clean up sibling tracking for levels deeper than current
@@ -209,12 +210,23 @@ export default class Matcher {
    */
   toString(separator, includeNamespace = true) {
     const sep = separator || this.separator;
-    return this.path.map(n => {
-      if (includeNamespace && n.namespace) {
-        return `${n.namespace}:${n.tag}`;
+    const isDefault = (sep === this.separator && includeNamespace === true);
+
+    if (isDefault) {
+      if (this._pathStringCache !== null && this._pathStringCache !== undefined) {
+        return this._pathStringCache;
       }
-      return n.tag;
-    }).join(sep);
+      const result = this.path.map(n =>
+        (includeNamespace && n.namespace) ? `${n.namespace}:${n.tag}` : n.tag
+      ).join(sep);
+      this._pathStringCache = result;
+      return result;
+    }
+
+    // Non-default separator or includeNamespace=false: don't cache (rare case)
+    return this.path.map(n =>
+      (includeNamespace && n.namespace) ? `${n.namespace}:${n.tag}` : n.tag
+    ).join(sep);
   }
 
   /**
@@ -229,6 +241,7 @@ export default class Matcher {
    * Reset the path to empty
    */
   reset() {
+    this._pathStringCache = null; // invalidate
     this.path = [];
     this.siblingStacks = [];
   }
@@ -416,6 +429,7 @@ export default class Matcher {
    * @param {Object} snapshot - State snapshot
    */
   restore(snapshot) {
+    this._pathStringCache = null; // invalidate
     this.path = snapshot.path.map(node => ({ ...node }));
     this.siblingStacks = snapshot.siblingStacks.map(map => new Map(map));
   }
