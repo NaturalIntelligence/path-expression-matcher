@@ -159,6 +159,26 @@ export default class ExpressionSet {
    * }
    */
   matchesAny(matcher) {
+    return this.findMatch(matcher) !== null;
+  }
+  /**
+ * Find and return the first Expression that matches the matcher's current path.
+ *
+ * Uses the same evaluation order as matchesAny (cheapest → most expensive):
+ *  1. Exact depth + tag bucket
+ *  2. Depth-only wildcard bucket
+ *  3. Deep-wildcard list
+ *
+ * @param {import('./Matcher.js').default} matcher - Matcher instance (or readOnly view)
+ * @returns {import('./Expression.js').default | null} the first matching Expression, or null
+ *
+ * @example
+ * const expr = stopNodes.findMatch(matcher);
+ * if (expr) {
+ *   // access expr.config, expr.pattern, etc.
+ * }
+ */
+  findMatch(matcher) {
     const depth = matcher.getDepth();
     const tag = matcher.getCurrentTag();
 
@@ -167,7 +187,7 @@ export default class ExpressionSet {
     const exactBucket = this._byDepthAndTag.get(exactKey);
     if (exactBucket) {
       for (let i = 0; i < exactBucket.length; i++) {
-        if (matcher.matches(exactBucket[i])) return true;
+        if (matcher.matches(exactBucket[i])) return exactBucket[i];
       }
     }
 
@@ -175,15 +195,15 @@ export default class ExpressionSet {
     const wildcardBucket = this._wildcardByDepth.get(depth);
     if (wildcardBucket) {
       for (let i = 0; i < wildcardBucket.length; i++) {
-        if (matcher.matches(wildcardBucket[i])) return true;
+        if (matcher.matches(wildcardBucket[i])) return wildcardBucket[i];
       }
     }
 
     // 3. Deep wildcards — cannot be pre-filtered by depth or tag
     for (let i = 0; i < this._deepWildcards.length; i++) {
-      if (matcher.matches(this._deepWildcards[i])) return true;
+      if (matcher.matches(this._deepWildcards[i])) return this._deepWildcards[i];
     }
 
-    return false;
+    return null;
   }
 }

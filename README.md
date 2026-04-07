@@ -138,7 +138,7 @@ console.log(matcher.toString()); // "soap:Envelope.soap:Body.ns:UserId"
 #### Constructor
 
 ```javascript
-new Expression(pattern, options)
+new Expression(pattern, options = {}, data)
 ```
 
 **Parameters:**
@@ -149,6 +149,8 @@ new Expression(pattern, options)
 ```javascript
 const expr1 = new Expression("root.users.user");
 const expr2 = new Expression("root/users/user", { separator: '/' });
+const expr3 = new Expression("root/users/user", { separator: '/' }, { extra: "data"});
+console.log(expr3.data) // { extra: "data" }
 ```
 
 #### Methods
@@ -813,6 +815,15 @@ if (stopNodes.matchesAny(matcher.readOnly())) { /* ... */ } // also works
 | Deep wildcard (`..script`) | flat list | O(D) — always scanned |
 
 In practice, deep-wildcard expressions are rare in configs, so the list stays small.
+
+### `findMatch(matcher)` → `Expression`
+
+Returns the Expression instance that matched the current path. Accepts both a `Matcher` instance and a `ReadOnlyMatcher` view.
+
+```javascript
+const node = stopNodes.findMatch(matcher);
+```
+
 
 ### Example 7: ExpressionSet in a real parser loop
 

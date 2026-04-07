@@ -674,6 +674,24 @@ export class ExpressionSet {
    * ```
    */
   matchesAny(matcher: Matcher | ReadOnlyMatcher): boolean;
+
+  /**
+   * Find the first expression in the set that matches the matcher's current path.
+   *
+   * Uses the pre-built index to evaluate only the relevant bucket(s):
+   *  1. Exact depth + tag — O(1) lookup
+   *  2. Depth-matched wildcard tag — O(1) lookup
+   *  3. Deep-wildcard expressions — always scanned (typically a small list)
+   *
+   * @param matcher - A `Matcher` instance or a `ReadOnlyMatcher` view
+   * @returns Expression if at least one expression matches the current path
+   *
+   * @example
+   * ```typescript
+   * const node = stopNodes.findMatch(matcher);
+   * ```
+   */
+  findMatch(matcher: Matcher | ReadOnlyMatcher): Expression;
 }
 
 /**

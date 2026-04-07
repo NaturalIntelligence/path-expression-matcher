@@ -311,7 +311,7 @@ console.log('\n── 14. Large expression set (30 expressions) ──\n');
 
 {
   const set = new ExpressionSet();
-  const tags = ['alpha','beta','gamma','delta','epsilon','zeta','eta','theta','iota','kappa'];
+  const tags = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa'];
 
   // 10 exact two-level paths
   for (const t of tags) set.add(new Expression(`root.${t}`));
@@ -334,6 +334,30 @@ console.log('\n── 14. Large expression set (30 expressions) ──\n');
   assert(set.matchesAny(matcherAt('root', 'level3', 'anything')), '30-expr: wildcard tag matches');
   assert(!set.matchesAny(matcherAt('root', 'unknown')), '30-expr: unknown tag not matched');
   assert(!set.matchesAny(matcherAt('root', 'items', 'unknown')), '30-expr: unknown deep tag not matched');
+}
+
+// ===========================================================================
+// 14. Large expression set — correctness across 30 expressions
+// ===========================================================================
+
+{
+  const set = new ExpressionSet();
+  const expressions = [
+    new Expression('root.users.user', {}, { extra: 'property' }),
+    new Expression('root.config.setting'),
+    new Expression('root.orders.order'),
+  ]
+  set.addAll(expressions);
+
+  const match1 = set.findMatch(matcherAt('root', 'users', 'user'));
+  assertEqual(match1.data, expressions[0].data, 'Matches root.users.user');
+
+  const match2 = set.findMatch(matcherAt('root', 'config', 'setting'));
+  assertEqual(match2.data, expressions[1].data, 'Matches root.config.setting');
+
+  const match3 = set.findMatch(matcherAt('root', 'orders', 'order'));
+  assertEqual(match3.data, expressions[2].data, 'Matches root.orders.order');
+
 }
 
 console.log('\n✅ All ExpressionSet tests passed\n');

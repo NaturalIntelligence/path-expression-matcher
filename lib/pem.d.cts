@@ -596,8 +596,26 @@ declare class ExpressionSet {
   /**
    * Test whether the matcher's current path matches any expression in the set.
    * Accepts both a Matcher instance and a ReadOnlyMatcher view.
+   * 
+   * 
+  * @param matcher - A `Matcher` instance or a `ReadOnlyMatcher` view
+  * @returns Expression if at least one expression matches the current path
    */
   matchesAny(matcher: Matcher | ReadOnlyMatcher): boolean;
+
+  /**
+   * Find the first expression in the set that matches the matcher's current path.
+
+   *
+   * @param matcher - A `Matcher` instance or a `ReadOnlyMatcher` view
+   * @returns Expression if at least one expression matches the current path
+   *
+   * @example
+   * ```typescript
+   * const node = stopNodes.findMatch(matcher);
+   * ```
+   */
+  findMatch(matcher: Matcher | ReadOnlyMatcher): Expression;
 }
 
 declare namespace pathExpressionMatcher {
