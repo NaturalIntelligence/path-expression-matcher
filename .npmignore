@@ -12,3 +12,5 @@ temp*
 docs*
 .nyc_output
 USERs.md
+.vscode
+.github
