@@ -17,11 +17,55 @@ import ExpressionSet from "./ExpressionSet.js";
  */
 
 /**
- * Names of methods that mutate Matcher state.
- * Any attempt to call these on a read-only view throws a TypeError.
- * @type {Set<string>}
+ * Lightweight read-only view over a Matcher instance.
+ * Replaces the previous Proxy-based approach to eliminate per-access get trap overhead.
+ * V8 can inline these direct method calls, unlike Proxy get traps.
  */
-const MUTATING_METHODS = new Set(['push', 'pop', 'reset', 'updateCurrent', 'restore']);
+class ReadOnlyMatcher {
+  constructor(matcher) {
+    this._m = matcher;
+  }
+
+  getCurrentTag() { return this._m.getCurrentTag(); }
+  getCurrentNamespace() { return this._m.getCurrentNamespace(); }
+  getAttrValue(attrName) { return this._m.getAttrValue(attrName); }
+  hasAttr(attrName) { return this._m.hasAttr(attrName); }
+  getPosition() { return this._m.getPosition(); }
+  getCounter() { return this._m.getCounter(); }
+  getIndex() { return this._m.getIndex(); }
+  getDepth() { return this._m.getDepth(); }
+  toString(separator, includeNamespace) { return this._m.toString(separator, includeNamespace); }
+  toArray() { return this._m.toArray(); }
+  matches(expression) { return this._m.matches(expression); }
+  matchesAny(exprSet) { return this._m.matchesAny(exprSet); }
+  snapshot() { return this._m.snapshot(); }
+
+  get path() {
+    if (this._m._frozenPathCache === null) {
+      this._m._frozenPathCache = Object.freeze(
+        this._m.path.map(node => Object.freeze({ ...node }))
+      );
+    }
+    return this._m._frozenPathCache;
+  }
+
+  get siblingStacks() {
+    if (this._m._frozenSiblingsCache === null) {
+      this._m._frozenSiblingsCache = Object.freeze(
+        this._m.siblingStacks.map(map => Object.freeze(new Map(map)))
+      );
+    }
+    return this._m._frozenSiblingsCache;
+  }
+
+  get separator() { return this._m.separator; }
+
+  push() { throw new TypeError("Cannot call 'push' on a read-only Matcher. Obtain a writable instance to mutate state."); }
+  pop() { throw new TypeError("Cannot call 'pop' on a read-only Matcher. Obtain a writable instance to mutate state."); }
+  reset() { throw new TypeError("Cannot call 'reset' on a read-only Matcher. Obtain a writable instance to mutate state."); }
+  updateCurrent() { throw new TypeError("Cannot call 'updateCurrent' on a read-only Matcher. Obtain a writable instance to mutate state."); }
+  restore() { throw new TypeError("Cannot call 'restore' on a read-only Matcher. Obtain a writable instance to mutate state."); }
+}
 
 export default class Matcher {
   /**
@@ -480,59 +524,13 @@ export default class Matcher {
    * ro.reset();            // ✗ throws TypeError
    */
   readOnly() {
-    const self = this;
-
-    return new Proxy(self, {
-      get(target, prop, receiver) {
-        // Block mutating methods
-        if (MUTATING_METHODS.has(prop)) {
-          return () => {
-            throw new TypeError(
-              `Cannot call '${prop}' on a read-only Matcher. ` +
-              `Obtain a writable instance to mutate state.`
-            );
-          };
-        }
-
-        // Return cached frozen copy of path — rebuilt only after push/pop/updateCurrent/reset/restore
-        if (prop === 'path') {
-          if (target._frozenPathCache === null) {
-            target._frozenPathCache = Object.freeze(
-              target.path.map(node => Object.freeze({ ...node }))
-            );
-          }
-          return target._frozenPathCache;
-        }
-
-        // Return cached frozen copy of siblingStacks — rebuilt only after push/pop/reset/restore
-        if (prop === 'siblingStacks') {
-          if (target._frozenSiblingsCache === null) {
-            target._frozenSiblingsCache = Object.freeze(
-              target.siblingStacks.map(map => Object.freeze(new Map(map)))
-            );
-          }
-          return target._frozenSiblingsCache;
-        }
-
-        const value = Reflect.get(target, prop, receiver);
-
-        // Bind methods so `this` inside them still refers to the real Matcher
-        if (typeof value === 'function') {
-          return value.bind(target);
-        }
-
-        return value;
-      },
-
-      // Prevent any property assignment on the read-only view
-      set(_target, prop) {
+    return new Proxy(new ReadOnlyMatcher(this), {
+      set(_, prop) {
         throw new TypeError(
           `Cannot set property '${String(prop)}' on a read-only Matcher.`
         );
       },
-
-      // Prevent property deletion
-      deleteProperty(_target, prop) {
+      deleteProperty(_, prop) {
         throw new TypeError(
           `Cannot delete property '${String(prop)}' from a read-only Matcher.`
         );
