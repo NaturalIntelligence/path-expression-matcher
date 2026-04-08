@@ -360,4 +360,98 @@ console.log('\n── 14. Large expression set (30 expressions) ──\n');
 
 }
 
+// ===========================================================================
+// 15. Deep wildcard indexing — terminal tag bucket routing
+// ===========================================================================
+console.log('\n── 15. Deep wildcard indexing — terminal tag routing ──\n');
+
+{
+  // ..tag should be indexed by terminal tag and match at various depths
+  const set = new ExpressionSet();
+  set.add(new Expression('..title'));
+
+  assert(set.matchesAny(matcherAt('root', 'title')), '..title matches at depth 2');
+  assert(set.matchesAny(matcherAt('root', 'channel', 'title')), '..title matches at depth 3');
+  assert(set.matchesAny(matcherAt('a', 'b', 'c', 'd', 'title')), '..title matches at depth 5');
+  assert(!set.matchesAny(matcherAt('title')), '..title does not match at depth 1');
+  assert(!set.matchesAny(matcherAt('root', 'other')), '..title does not match different tag');
+}
+
+{
+  // ..* should be unindexed and match any tag at any depth > 1
+  const set = new ExpressionSet();
+  set.add(new Expression('..*'));
+
+  assert(set.matchesAny(matcherAt('root', 'anything')), '..* matches any tag at depth 2');
+  assert(set.matchesAny(matcherAt('a', 'b', 'c')), '..* matches at depth 3');
+  assert(!set.matchesAny(matcherAt('root')), '..* does not match at depth 1');
+}
+
+{
+  // root.. — terminal segment is a deep-wildcard itself, should go to unindexed
+  const set = new ExpressionSet();
+  set.add(new Expression('root..'));
+
+  assert(set.matchesAny(matcherAt('root', 'anything')), 'root.. matches at depth 2');
+  assert(set.matchesAny(matcherAt('root', 'a', 'b')), 'root.. matches at depth 3');
+  assert(!set.matchesAny(matcherAt('other', 'anything')), 'root.. does not match different root');
+}
+
+{
+  // ..ns::tag — indexed by "tag", namespace checked during full match
+  const set = new ExpressionSet();
+  set.add(new Expression('..ns::user'));
+
+  const m1 = new Matcher();
+  m1.push('root');
+  m1.push('user', null, 'ns');
+  assert(set.matchesAny(m1), '..ns::user matches with correct namespace');
+
+  const m2 = new Matcher();
+  m2.push('root');
+  m2.push('user', null, 'other');
+  assert(!set.matchesAny(m2), '..ns::user does not match wrong namespace');
+
+  assert(!set.matchesAny(matcherAt('root', 'user')), '..ns::user does not match without namespace');
+}
+
+{
+  // root..b..d — multiple deep wildcards, indexed by terminal "d"
+  const set = new ExpressionSet();
+  set.add(new Expression('root..b..d'));
+
+  assert(set.matchesAny(matcherAt('root', 'b', 'd')), 'root..b..d matches root.b.d');
+  assert(set.matchesAny(matcherAt('root', 'x', 'b', 'y', 'd')), 'root..b..d matches root.x.b.y.d');
+  assert(!set.matchesAny(matcherAt('root', 'x', 'd')), 'root..b..d does not match without b');
+  assert(!set.matchesAny(matcherAt('other', 'b', 'd')), 'root..b..d does not match different root');
+}
+
+{
+  // Mix of indexed and unindexed deep wildcards should all work together
+  const set = new ExpressionSet();
+  set.add(new Expression('..script'));   // indexed by "script"
+  set.add(new Expression('..*'));        // unindexed (terminal *)
+  set.add(new Expression('root..'));     // unindexed (terminal ..)
+
+  assert(set.matchesAny(matcherAt('root', 'script')), 'Mixed: ..script matches');
+  assert(set.matchesAny(matcherAt('root', 'anything')), 'Mixed: ..* matches any tag');
+  assert(set.matchesAny(matcherAt('root', 'deep', 'path')), 'Mixed: root.. matches');
+  assert(!set.matchesAny(matcherAt('other')), 'Mixed: depth 1 does not match');
+}
+
+{
+  // Large set — 300 deep wildcards, correctness spot checks
+  const set = new ExpressionSet();
+  for (let i = 0; i < 300; i++) {
+    set.add(new Expression(`..tag${i}`));
+  }
+  assertEqual(set.size, 300, 'Large set has 300 expressions');
+
+  assert(set.matchesAny(matcherAt('root', 'child', 'tag0')), 'Large set: tag0 matches');
+  assert(set.matchesAny(matcherAt('root', 'child', 'tag150')), 'Large set: tag150 matches');
+  assert(set.matchesAny(matcherAt('root', 'child', 'tag299')), 'Large set: tag299 matches');
+  assert(!set.matchesAny(matcherAt('root', 'child', 'tag300')), 'Large set: tag300 does not match');
+  assert(!set.matchesAny(matcherAt('root', 'child', 'nonexistent')), 'Large set: nonexistent does not match');
+}
+
 console.log('\n✅ All ExpressionSet tests passed\n');
