@@ -1,5 +1,9 @@
 # path-expression-matcher
 
+[![path-expression-matcher downloads](https://img.shields.io/npm/dw/path-expression-matcher.svg)](https://npm-compare.com/path-expression-matcher) 
+[![path-expression-matcher version](https://img.shields.io/npm/v/path-expression-matcher.svg)](https://www.npmjs.com/package/path-expression-matcher)
+[![path-expression-matcher license](https://img.shields.io/npm/l/path-expression-matcher.svg)](https://github.com/NaturalIntelligence/path-expression-matcher)
+
 Efficient path tracking and pattern matching for XML, JSON, YAML or any other parsers.
 
 ## 🎯 Purpose
